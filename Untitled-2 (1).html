@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradutor de Texto e Voz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(to right, #00A859, #FFD700); /* Gradiente de verde e amarelo */
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        p {
+            font-size: 1rem;
+            margin-bottom: 20px;
+            color: #fff;
+            text-align: center;
+        }
+
+        /* Estilo para as caixas de input */
+        textarea, select, button {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* Novo estilo para os botões */
+        button {
+            background-color: #3498db;  /* Azul-claro */
+            color: white;
+            border: 1px solid #3498db;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+
+        #voice-btn {
+            background-color: #e74c3c;  /* Cor vermelha para o botão de voz */
+            border: 1px solid #e74c3c;
+        }
+
+        #voice-btn:hover {
+            background-color: #c0392b;
+            border-color: #c0392b;
+        }
+
+        #output {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        /* Media Query para telas menores */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            p {
+                font-size: 0.9rem;
+            }
+
+            textarea {
+                height: 120px;
+            }
+
+            select, button {
+                font-size: 0.9rem;
+            }
+
+            #output {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.2rem;
+            }
+
+            p {
+                font-size: 0.85rem;
+            }
+
+            textarea {
+                height: 100px;
+            }
+
+            select, button {
+                font-size: 0.85rem;
+                padding: 0.6rem 0.9rem;
+            }
+
+            #output {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Tradutor de Texto e Voz</h1>
+    <p>Digite ou fale o texto e escolha o idioma de origem e destino para tradução.</p>
+    
+    <div>
+        <label for="source-language">Escolha o idioma de origem:</label>
+        <select id="source-language">
+            <option value="pt">Português</option>
+            <option value="en">Inglês</option>
+            <option value="es">Espanhol</option>
+            <option value="fr">Francês</option>
+            <option value="de">Alemão</option>
+            <option value="it">Italiano</option>
+            <option value="ja">Japonês</option>
+            <option value="zh">Chinês</option>
+            <option value="ar">Árabe</option>
+            <option value="ko">Coreano</option>
+        </select>
+    </div>
+
+    <textarea id="input-text" placeholder="Digite o texto aqui..."></textarea>
+    
+    <div>
+        <label for="target-language">Escolha o idioma de destino:</label>
+        <select id="target-language">
+            <option value="pt">Português</option>
+            <option value="en">Inglês</option>
+            <option value="es">Espanhol</option>
+            <option value="fr">Francês</option>
+            <option value="de">Alemão</option>
+            <option value="it">Italiano</option>
+            <option value="ja">Japonês</option>
+            <option value="zh">Chinês</option>
+            <option value="ar">Árabe</option>
+            <option value="ko">Coreano</option>
+        </select>
+    </div>
+    
+    <button id="translate-btn">Traduzir</button>
+    <button id="voice-btn">Falar para Traduzir</button>
+    <button id="pronounce-btn">Pronunciar Tradução</button>
+
+    <div id="output"></div>
+
+    <script>
+        // Função para traduzir o texto usando a API pública MyMemory
+        async function translateText(text, sourceLang, targetLang) {
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // Exibindo a tradução na tela
+                const translatedText = data.responseData.translatedText;
+                document.getElementById('output').innerHTML = `<strong>Texto traduzido:</strong> ${translatedText}`;
+
+                // Armazena a tradução para ser pronunciada depois
+                return translatedText;
+            } catch (error) {
+                document.getElementById('output').innerHTML = `<strong>Erro ao traduzir:</strong> ${error}`;
+                return '';
+            }
+        }
+
+        // Verifica se o SpeechRecognition está disponível
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            document.getElementById('voice-btn').disabled = true;
+            document.getElementById('voice-btn').textContent = "Fala não suportada neste navegador";
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR';  // Define o idioma para português
+        recognition.continuous = true;  // Continua capturando a fala
+        recognition.interimResults = true;  // Mostra os resultados enquanto está ouvindo
+
+        // Evento ao clicar no botão de traduzir
+        document.getElementById('translate-btn').addEventListener('click', () => {
+            const text = document.getElementById('input-text').value;
+            const sourceLang = document.getElementById('source-language').value;
+            const targetLang = document.getElementById('target-language').value;
+
+            // Verifica se o texto está vazio
+            if (text.trim() === "") {
+                document.getElementById('output').innerHTML = "Por favor, digite ou fale um texto para traduzir.";
+            } else {
+                // Chama a função para traduzir
+                translateText(text, sourceLang, targetLang);
+            }
+        });
+
+        // Evento ao clicar no botão de falar
+        document.getElementById('voice-btn').addEventListener('click', () => {
+            recognition.start();  // Inicia a captura da fala
+            document.getElementById('output').innerHTML = 'Escutando... Fale agora!';
+        });
+
+        // Quando a fala é reconhecida
+        recognition.onresult = (event) => {
+            let transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+
+            // Exibe o texto reconhecido
+            document.getElementById('input-text').value = transcript;
+            document.getElementById('output').innerHTML = `Texto reconhecido: ${transcript}`;
+
+            // Traduzir o texto capturado
+            const sourceLang = document.getElementById('source-language').value;
+            const targetLang = document.getElementById('target-language').value;
+            translateText(transcript, sourceLang, targetLang);
+        };
+
+        // Se ocorrer erro
+        recognition.onerror = (event) => {
+            document.getElementById('output').innerHTML = `Erro: ${event.error}`;
+        };
+
+        // Função para pronunciar o texto
+        function pronounceText(text, lang) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;  // Define o idioma da fala
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Evento ao clicar no botão de pronunciar
+        document.getElementById('pronounce-btn').addEventListener('click', async () => {
+            const translatedText = document.getElementById('output').textContent.replace('Texto traduzido:', '').trim();
+            const targetLang = document.getElementById('target-language').value;
+            if (translatedText) {
+                pronounceText(translatedText, targetLang);
+            } else {
+                document.getElementById('output').innerHTML = "Por favor, traduza o texto primeiro!";
+            }
+        });
+    </script>
+</body>
+</html>
